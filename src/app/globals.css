@@ -1,0 +1,389 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f0f1a;
+  --foreground: #ffffff;
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --secondary: #22d3ee;
+  --accent: #f472b6;
+  --surface: #1a1a2e;
+  --surface-light: #252540;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --gradient-1: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+  --gradient-2: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-surface: var(--surface);
+  --color-surface-light: var(--surface-light);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) var(--surface);
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--surface);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 3px;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* Animated gradient background */
+.gradient-bg {
+  background: linear-gradient(-45deg, #0f0f1a, #1a1a2e, #1e1b4b, #0f172a);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(26, 26, 46, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-light {
+  background: rgba(37, 37, 64, 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Glow effects */
+.glow {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+.glow-sm {
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+}
+
+/* Button styles */
+.btn-primary {
+  background: var(--gradient-1);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--surface-light);
+  color: var(--foreground);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+}
+
+/* Input styles */
+.input-modern {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  color: var(--foreground);
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.input-modern:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.input-modern::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Message bubbles */
+.message-user {
+  background: var(--gradient-1);
+  border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+}
+
+.message-ai {
+  background: var(--surface-light);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+}
+
+/* Typing indicator animation */
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: typingBounce 1.4s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-10px); opacity: 1; }
+}
+
+/* Pulse animation for loading */
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 5px var(--primary), 0 0 10px var(--primary); }
+  50% { box-shadow: 0 0 20px var(--primary), 0 0 30px var(--primary); }
+}
+
+/* Shimmer loading effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 0%,
+    var(--surface-light) 50%,
+    var(--surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Fade in animation */
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Slide up animation */
+.slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Float animation */
+.float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Gradient text */
+.gradient-text {
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Quick action chips */
+.chip {
+  background: var(--surface-light);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  transform: scale(1.05);
+}
+
+/* Avatar ring */
+.avatar-ring {
+  padding: 2px;
+  background: var(--gradient-1);
+  border-radius: 50%;
+}
+
+/* Status indicator */
+.status-online {
+  width: 10px;
+  height: 10px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Student report (HTML from API + modal layout) */
+.report-modal-prose {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.report-modal-prose .report-overview-card {
+  padding: 0.75rem 0;
+}
+
+.report-modal-prose .report-lead {
+  font-size: 1rem;
+  margin: 0 0 0.35rem 0;
+  color: #fff;
+}
+
+.report-modal-prose .report-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.report-modal-prose .report-p {
+  margin: 0 0 0.75rem 0;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.report-modal-prose .report-note {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.85rem;
+  color: rgba(251, 191, 36, 0.95);
+}
+
+.report-modal-prose .report-highlight {
+  margin: 0 0 0.75rem 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+}
+
+.report-modal-prose .report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.report-modal-prose .report-table th,
+.report-modal-prose .report-table td {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+}
+
+.report-modal-prose .report-table th {
+  background: rgba(99, 102, 241, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.report-modal-prose .report-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.report-modal-prose .report-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .btn-primary, .btn-secondary {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .input-modern {
+    padding: 0.75rem;
+  }
+
+  .report-modal-prose .report-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
