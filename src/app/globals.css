@@ -152,6 +152,94 @@ body {
   color: rgba(255, 255, 255, 0.4);
 }
 
+/* Chat composer: toolbar overlaid inside the field (single pill) */
+.composer-bar {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  padding: 0.25rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.composer-bar:focus-within {
+  border-color: rgba(99, 102, 241, 0.55);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.composer-toolbar {
+  position: absolute;
+  left: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.composer-toolbar .composer-icon-btn,
+.composer-toolbar a.composer-icon-btn {
+  pointer-events: auto;
+}
+
+.composer-field {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0.65rem 0.75rem 0.65rem 0.75rem;
+  color: var(--foreground);
+  font-size: 0.9375rem;
+}
+
+.composer-bar--student .composer-field {
+  padding-left: 6rem;
+}
+
+.composer-bar--teacher .composer-field {
+  padding-left: 3.35rem;
+}
+
+.composer-bar--admin .composer-field {
+  padding-left: 0.75rem;
+}
+
+.composer-field::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.composer-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.65rem;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  text-decoration: none;
+}
+
+.composer-icon-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.composer-icon-btn svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
 /* Message bubbles */
 .message-user {
   background: var(--gradient-1);

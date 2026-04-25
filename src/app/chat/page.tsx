@@ -1,18 +1,30 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
 import { StudentReportModal } from '@/components/StudentReportModal';
 import { ChatMessage, StudentReportPayload } from '@/types';
 
-const quickActions = [
+const studentQuickActions = [
   { label: 'Assignments', icon: '📝', prompt: 'Show my pending assignments' },
   { label: 'Fees', icon: '💰', prompt: 'What is my fee status?' },
   { label: 'Exams', icon: '📅', prompt: 'When are my upcoming exams?' },
   { label: 'Grades', icon: '📊', prompt: 'Show my grades and CGPA' },
   { label: 'Documents', icon: '📄', prompt: 'I need to request a document' },
+];
+
+const teacherQuickActions = [
+  { label: 'Teaching load', icon: '📚', prompt: 'Show assignments I created and submission counts by status' },
+  { label: 'My courses', icon: '🎓', prompt: 'What courses am I assigned to teach?' },
+  { label: 'Announcements', icon: '📣', prompt: 'What campus announcements apply to my department?' },
+];
+
+const adminQuickActions = [
+  { label: 'Announcements', icon: '📣', prompt: 'List recent active campus announcements' },
+  { label: 'My profile', icon: '👤', prompt: 'Summarize my staff profile from the portal' },
 ];
 
 function TypingIndicator() {
@@ -98,13 +110,21 @@ export default function ChatPage() {
         const session = await api.startChatSession({
           email: user.email,
           roll_number: user.roll_number,
+          student_id: user.user_id,
+          user_role: user.role,
         });
         setSessionId(session.session_id);
         
+        const welcomeCopy =
+          user.role === 'teacher'
+            ? `Hello ${user.full_name}! 👋\n\nFaculty assistant: ask about your assigned courses, assignments you created, submission counts, and department announcements. Student fee/grade tools are not used here.\n\nWhat would you like to check?`
+            : user.role === 'admin'
+              ? `Hello ${user.full_name}! 👋\n\nStaff assistant: campus announcements and your admin profile. Ask in plain language.\n\nHow can I help?`
+              : `Hello ${user.full_name}! 👋\n\nMain IBA Sukkur ka AI assistant hoon. Aap mujhse apne assignments, fees, exams, grades, ya documents ke baare mein pooch sakte hain.\n\nAaj kis cheez mein madad chahiye?`;
         const welcomeMessage: ChatMessage = {
           id: 'welcome',
           role: 'assistant',
-          content: `Hello ${user.full_name}! 👋\n\nMain IBA Sukkur ka AI assistant hoon. Aap mujhse apne assignments, fees, exams, grades, ya documents ke baare mein pooch sakte hain.\n\nAaj kis cheez mein madad chahiye?`,
+          content: welcomeCopy,
           timestamp: new Date(),
         };
         setMessages([welcomeMessage]);
@@ -195,6 +215,13 @@ export default function ChatPage() {
     router.push('/login');
   };
 
+  const quickActions =
+    user?.role === 'teacher'
+      ? teacherQuickActions
+      : user?.role === 'admin'
+        ? adminQuickActions
+        : studentQuickActions;
+
   if (authLoading || isInitializing) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
@@ -238,35 +265,43 @@ export default function ChatPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* User info */}
-            <div className="hidden sm:flex items-center gap-3 glass-light px-3 py-2 rounded-xl">
+            <div className="flex items-center gap-3 glass-light px-3 py-2 rounded-xl">
               <div className="avatar-ring">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-white text-sm font-medium">
                   {user?.full_name?.charAt(0) || 'U'}
                 </div>
               </div>
-              <div className="text-sm">
-                <p className="text-white font-medium">{user?.full_name}</p>
-                <p className="text-gray-400 text-xs">{user?.roll_number || user?.email}</p>
+              <div className="text-sm min-w-0">
+                <p className="text-white font-medium truncate max-w-[140px] sm:max-w-[200px]">
+                  {user?.full_name}
+                </p>
+                <p className="text-gray-400 text-xs truncate max-w-[140px] sm:max-w-[200px]">
+                  {user?.role === 'student'
+                    ? user?.roll_number || user?.email
+                    : user?.role === 'teacher'
+                      ? user?.employee_id || user?.email
+                      : user?.email}
+                </p>
               </div>
             </div>
 
+            {/* Academic Report */}
             {user?.role === 'student' && (
               <button
                 type="button"
                 onClick={openStudentReport}
-                className="btn-secondary flex items-center gap-2 !px-3 !py-2"
-                title="View full academic report"
+                className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                title="Academic report"
+                aria-label="Open academic report"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                   />
                 </svg>
-                <span className="hidden sm:inline">Report</span>
               </button>
             )}
 
@@ -313,27 +348,98 @@ export default function ChatPage() {
             ))}
           </div>
 
-          {/* Input */}
-          <div className="flex gap-3">
-            <div className="flex-1 relative">
+          {/* Composer: actions + input (messaging-app style) */}
+          <div className="flex gap-2 items-stretch">
+            <div
+              className={`composer-bar ${
+                user?.role === 'teacher'
+                  ? 'composer-bar--teacher'
+                  : user?.role === 'admin'
+                    ? 'composer-bar--admin'
+                    : 'composer-bar--student'
+              }`}
+            >
+              <div className="composer-toolbar">
+                {(user?.role === 'teacher' || user?.role === 'student' || user?.role === 'admin') && (
+                  <>
+                    <input
+                      type="file"
+                      id="upload-chat-input"
+                      className="hidden"
+                      accept=".pdf,application/pdf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (!sessionId) return;
+                          
+                          setIsTyping(true);
+                          const userMsg: ChatMessage = {
+                            id: Date.now().toString(),
+                            role: 'user',
+                            content: `[Uploaded document: ${file.name}]`,
+                            timestamp: new Date(),
+                          };
+                          setMessages((prev) => [...prev, userMsg]);
+                          
+                          try {
+                            const res = await api.uploadChatFile(sessionId, file);
+                            const aiMsg: ChatMessage = {
+                              id: (Date.now() + 1).toString(),
+                              role: 'assistant',
+                              content: res.message,
+                              timestamp: new Date(),
+                            };
+                            setMessages((prev) => [...prev, aiMsg]);
+                          } catch (err) {
+                            const aiMsg: ChatMessage = {
+                              id: (Date.now() + 1).toString(),
+                              role: 'assistant',
+                              content: `Error: ${err instanceof Error ? err.message : 'Upload failed'}`,
+                              timestamp: new Date(),
+                            };
+                            setMessages((prev) => [...prev, aiMsg]);
+                          } finally {
+                            setIsTyping(false);
+                            e.target.value = ''; // Reset input
+                            scrollToBottom();
+                          }
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="upload-chat-input"
+                      className="composer-icon-btn flex items-center justify-center !text-rose-300/90 hover:!text-rose-200 cursor-pointer"
+                      title="Upload document"
+                      aria-label="Upload document"
+                    >
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} className="w-5 h-5">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                        />
+                      </svg>
+                    </label>
+                  </>
+                )}
+              </div>
               <input
                 ref={inputRef}
+                className="composer-field"
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Type your message... (English or Roman Urdu)"
+                placeholder="Message… (English or Roman Urdu)"
                 disabled={isTyping}
-                className="input-modern pr-12"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                ↵
-              </span>
             </div>
             <button
+              type="button"
               onClick={() => handleSendMessage(inputValue)}
               disabled={!inputValue.trim() || isTyping}
-              className="btn-primary !px-4 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary !px-4 shrink-0 rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Send"
             >
               {isTyping ? (
                 <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24">

@@ -1,4 +1,14 @@
-import { LoginResponse, ChatSession, ChatResponse, User, StudentReportPayload } from '@/types';
+import {
+  LoginResponse,
+  ChatSession,
+  ChatResponse,
+  User,
+  StudentReportPayload,
+  TeacherCourseOption,
+  StudentAssignmentListItem,
+  CreateAssignmentPdfResponse,
+  AssignmentPdfAnalyzeResponse,
+} from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -64,7 +74,12 @@ class ApiService {
     });
   }
 
-  async startChatSession(identifier: { roll_number?: string; email?: string }): Promise<ChatSession> {
+  async startChatSession(identifier: {
+    roll_number?: string;
+    email?: string;
+    student_id?: string;
+    user_role?: string;
+  }): Promise<ChatSession> {
     return this.request<ChatSession>('/chat/session/start', {
       method: 'POST',
       body: JSON.stringify(identifier),
@@ -88,6 +103,93 @@ class ApiService {
 
   async getStudentReport(): Promise<StudentReportPayload> {
     return this.request<StudentReportPayload>('/report/student');
+  }
+
+  async getTeacherAssignmentCourses(): Promise<{ courses: TeacherCourseOption[] }> {
+    return this.request('/assignments/teacher/courses');
+  }
+
+  async analyzeTeacherAssignmentPdf(file: File): Promise<AssignmentPdfAnalyzeResponse> {
+    const token = this.getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_BASE_URL}/assignments/teacher/pdf/analyze`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'Analyze failed' }));
+      const d = err.detail;
+      throw new Error(typeof d === 'string' ? d : 'Analyze failed');
+    }
+    return response.json();
+  }
+
+  async uploadAssignmentPdf(formData: FormData): Promise<CreateAssignmentPdfResponse> {
+    const token = this.getToken();
+    const response = await fetch(`${API_BASE_URL}/assignments/teacher/pdf`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      const d = err.detail;
+      throw new Error(typeof d === 'string' ? d : 'Upload failed');
+    }
+    return response.json();
+  }
+
+  async uploadChatFile(sessionId: string, file: File): Promise<{ success: boolean; message: string; data: any }> {
+    const token = this.getToken();
+    const formData = new FormData();
+    formData.append('session_id', sessionId);
+    formData.append('file', file);
+    
+    const response = await fetch(`${API_BASE_URL}/chat/upload_file`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      const d = err.detail;
+      throw new Error(typeof d === 'string' ? d : 'Upload failed');
+    }
+    return response.json();
+  }
+
+  async getMyAssignmentsList(): Promise<{ assignments: StudentAssignmentListItem[] }> {
+    return this.request('/assignments/student/mine');
+  }
+
+  async downloadAssignmentPdf(assignmentId: string): Promise<void> {
+    const token = this.getToken();
+    const response = await fetch(`${API_BASE_URL}/assignments/${assignmentId}/attachment`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'Download failed' }));
+      const d = err.detail;
+      throw new Error(typeof d === 'string' ? d : 'Download failed');
+    }
+    const blob = await response.blob();
+    const cd = response.headers.get('Content-Disposition');
+    let filename = 'assignment-brief.pdf';
+    if (cd) {
+      const m = /filename="([^"]+)"/i.exec(cd) || /filename=([^;\s]+)/i.exec(cd);
+      if (m) filename = m[1].replace(/['"]/g, '');
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
   async downloadStudentReportPdf(): Promise<void> {

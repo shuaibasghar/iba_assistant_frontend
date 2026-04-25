@@ -10,6 +10,47 @@ export interface User {
   cgpa?: number;
   employee_id?: string;
   designation?: string;
+  /** Teacher: assigned course codes from API */
+  courses?: string[];
+}
+
+export interface TeacherCourseOption {
+  course_code: string;
+  course_name?: string;
+  semester?: number;
+  credit_hours?: number;
+}
+
+export interface StudentAssignmentListItem {
+  assignment_id: string;
+  title?: string;
+  course_code?: string;
+  course_name?: string;
+  due_date?: string | null;
+  total_marks?: number;
+  description?: string;
+  has_pdf_attachment?: boolean;
+  submission_status?: string;
+  source?: string;
+}
+
+export interface AssignmentPdfAnalyzeResponse {
+  opened_on: string | null;
+  closed_on: string | null;
+  title_hint: string | null;
+  marks_hint: number | null;
+  raw_text_preview?: string;
+  note?: string | null;
+}
+
+export interface CreateAssignmentPdfResponse {
+  assignment_id: string;
+  course_code: string;
+  title: string;
+  due_date: string;
+  opens_at: string;
+  students_notified: number;
+  attachment_stored_name: string;
 }
 
 export interface LoginResponse {
@@ -36,6 +77,7 @@ export interface ChatSession {
   email: string;
   semester: number;
   department: string;
+  user_role: string;
 }
 
 export interface ChatResponse {
