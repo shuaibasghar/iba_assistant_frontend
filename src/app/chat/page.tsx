@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
 import { StudentReportModal } from '@/components/StudentReportModal';
+import { useSpeechToText, useTextToSpeech } from '@/hooks/useVoiceChat';
 import { ChatMessage, StudentReportPayload } from '@/types';
 
 const studentQuickActions = [
@@ -48,9 +49,17 @@ function formatTime(date: Date): string {
   return `${hours}:${minutes}`;
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({
+  message,
+  isSpeaking,
+  onToggleSpeak,
+}: {
+  message: ChatMessage;
+  isSpeaking?: boolean;
+  onToggleSpeak?: () => void;
+}) {
   const isUser = message.role === 'user';
-  
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} fade-in`}>
       <div className={`flex items-start gap-3 max-w-[85%] ${isUser ? 'flex-row-reverse' : ''}`}>
@@ -61,10 +70,39 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         )}
         <div className={`p-4 ${isUser ? 'message-user' : 'message-ai'}`}>
           <p className="text-white whitespace-pre-wrap leading-relaxed">{message.content}</p>
-          <p className={`text-xs mt-2 ${isUser ? 'text-white/60' : 'text-gray-500'}`}>
-            {formatTime(message.timestamp)}
-            {message.intent && !isUser && (
-              <span className="ml-2 px-2 py-0.5 bg-white/10 rounded-full">{message.intent}</span>
+          <p className={`text-xs mt-2 flex items-center flex-wrap gap-2 ${isUser ? 'text-white/60' : 'text-gray-500'}`}>
+            <span>
+              {formatTime(message.timestamp)}
+              {message.intent && !isUser && (
+                <span className="ml-2 px-2 py-0.5 bg-white/10 rounded-full">{message.intent}</span>
+              )}
+            </span>
+            {!isUser && onToggleSpeak && (
+              <button
+                type="button"
+                onClick={onToggleSpeak}
+                className={`p-1 rounded-lg transition-all ${
+                  isSpeaking
+                    ? 'text-cyan-300 bg-cyan-500/20'
+                    : 'text-gray-500 hover:text-gray-300 hover:bg-white/10'
+                }`}
+                title={isSpeaking ? 'Stop' : 'Read aloud'}
+                aria-label={isSpeaking ? 'Stop reading' : 'Read message aloud'}
+              >
+                {isSpeaking ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <rect x="6" y="6" width="12" height="12" rx="1" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} aria-hidden>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                    />
+                  </svg>
+                )}
+              </button>
             )}
           </p>
         </div>
@@ -87,6 +125,18 @@ export default function ChatPage() {
   const [reportError, setReportError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const {
+    isListening,
+    isSupported: voiceInputSupported,
+    voiceError,
+    setVoiceError,
+    startListening,
+    stopListening,
+    cancelVoiceInput,
+  } = useSpeechToText();
+  /** Text in the field before the current voice session (restore on cancel) */
+  const voiceTextPrefixRef = useRef('');
+  const { speak: speakMessage, stop: stopSpeaking, activeSpeechId } = useTextToSpeech();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -140,43 +190,94 @@ export default function ChatPage() {
     }
   }, [user]);
 
-  const handleSendMessage = async (content: string) => {
-    if (!content.trim() || !sessionId || isTyping) return;
+  const handleSendMessage = useCallback(
+    async (content: string) => {
+      if (!content.trim() || !sessionId || isTyping) return;
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: content.trim(),
-      timestamp: new Date(),
-    };
+      stopSpeaking();
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInputValue('');
-    setIsTyping(true);
-
-    try {
-      const response = await api.sendMessage(sessionId, content);
-      
-      const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response.message,
-        timestamp: new Date(response.timestamp),
-        intent: response.intent,
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (error) {
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: content.trim(),
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsTyping(false);
-      inputRef.current?.focus();
+
+      setMessages((prev) => [...prev, userMessage]);
+      setInputValue('');
+      setIsTyping(true);
+
+      try {
+        const response = await api.sendMessage(sessionId, content);
+
+        const aiMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: response.message,
+          timestamp: new Date(response.timestamp),
+          intent: response.intent,
+        };
+
+        setMessages((prev) => [...prev, aiMessage]);
+      } catch (error) {
+        const errorMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again.',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      } finally {
+        setIsTyping(false);
+        inputRef.current?.focus();
+      }
+    },
+    [sessionId, isTyping, stopSpeaking]
+  );
+
+  const mergeVoiceWithPrefix = useCallback((voiceChunk: string) => {
+    const p = voiceTextPrefixRef.current;
+    const v = voiceChunk.trim();
+    if (!v) {
+      return p;
+    }
+    if (!p) {
+      return v;
+    }
+    return `${p} ${v}`;
+  }, []);
+
+  const toggleVoiceInput = () => {
+    setVoiceError(null);
+    if (isListening) {
+      stopListening();
+      return;
+    }
+    if (!sessionId || isTyping) return;
+    voiceTextPrefixRef.current = inputValue;
+    startListening(
+      (interim) => {
+        setInputValue(mergeVoiceWithPrefix(interim));
+      },
+      (finalVoice) => {
+        setInputValue(mergeVoiceWithPrefix(finalVoice));
+      },
+      () => {
+        setInputValue(voiceTextPrefixRef.current);
+      }
+    );
+  };
+
+  const handleCancelVoice = () => {
+    setVoiceError(null);
+    cancelVoiceInput();
+  };
+
+  const toggleAssistantSpeak = (id: string, text: string) => {
+    if (activeSpeechId === id) {
+      stopSpeaking();
+    } else {
+      speakMessage(id, text);
     }
   };
 
@@ -323,7 +424,16 @@ export default function ChatPage() {
       <main className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageBubble
+              key={message.id}
+              message={message}
+              isSpeaking={message.role === 'assistant' && activeSpeechId === message.id}
+              onToggleSpeak={
+                message.role === 'assistant'
+                  ? () => toggleAssistantSpeak(message.id, message.content)
+                  : undefined
+              }
+            />
           ))}
           {isTyping && <TypingIndicator />}
           <div ref={messagesEndRef} />
@@ -334,6 +444,20 @@ export default function ChatPage() {
       <footer className="glass border-t border-white/10 p-4 sticky bottom-0">
         <div className="max-w-4xl mx-auto">
           {/* Quick Actions */}
+          {voiceError && (
+            <div className="mb-2 flex items-start justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100/90">
+              <span className="pt-0.5">{voiceError}</span>
+              <button
+                type="button"
+                onClick={() => setVoiceError(null)}
+                className="shrink-0 rounded-lg px-2 py-0.5 text-amber-200/80 hover:bg-white/10"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
           <div className="flex gap-2 mb-3 overflow-x-auto pb-2 scrollbar-hide">
             {quickActions.map((action) => (
               <button
@@ -422,6 +546,50 @@ export default function ChatPage() {
                     </label>
                   </>
                 )}
+                <button
+                  type="button"
+                  onClick={toggleVoiceInput}
+                  disabled={!voiceInputSupported || isTyping || !sessionId}
+                  className={`composer-icon-btn flex items-center justify-center ${
+                    isListening ? 'composer-icon-btn--voice-active' : 'text-cyan-300/80 hover:text-cyan-200'
+                  } ${!voiceInputSupported ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  title={
+                    !voiceInputSupported
+                      ? 'Voice input needs Chrome or Edge on desktop'
+                      : isListening
+                        ? 'Done: stop mic — text stays; press Send, or Cancel to discard'
+                        : 'Speak your message (does not send until you press Send)'
+                  }
+                  aria-pressed={isListening}
+                  aria-label={isListening ? 'Finish voice input (keep text in field)' : 'Start voice input'}
+                >
+                  {isListening ? (
+                    <span className="flex h-3 w-3 items-center justify-center" aria-hidden>
+                      <span className="h-2.5 w-2.5 rounded-sm bg-rose-400" />
+                    </span>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} aria-hidden>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                      />
+                    </svg>
+                  )}
+                </button>
+                {isListening && (
+                  <button
+                    type="button"
+                    onClick={handleCancelVoice}
+                    className="composer-icon-btn flex items-center justify-center !text-amber-200/90 hover:!text-amber-100"
+                    title="Cancel voice: discard this dictation and restore what you had before the mic"
+                    aria-label="Cancel voice input and discard text"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
               <input
                 ref={inputRef}
@@ -430,7 +598,11 @@ export default function ChatPage() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Message… (English or Roman Urdu)"
+                placeholder={
+                  isListening
+                    ? 'Listening… (tap mic to finish, then Send, or the X to cancel voice)'
+                    : 'Message… (English or Roman Urdu)'
+                }
                 disabled={isTyping}
               />
             </div>

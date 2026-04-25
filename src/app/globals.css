@@ -240,6 +240,12 @@ body {
   height: 1.35rem;
 }
 
+.composer-icon-btn--voice-active {
+  color: #fda4af !important;
+  background: rgba(244, 63, 94, 0.15) !important;
+  box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.35);
+}
+
 /* Message bubbles */
 .message-user {
   background: var(--gradient-1);
