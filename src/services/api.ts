@@ -9,8 +9,43 @@ import {
   CreateAssignmentPdfResponse,
   AssignmentPdfAnalyzeResponse,
 } from '@/types';
+import { portalChatSessionStorageKey } from '@/lib/portalChatSession';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+/** Paths where 401 means invalid credentials, not "session expired". */
+const AUTH_401_NO_LOGOUT = new Set(['/auth/login', '/auth/login/form']);
+
+/**
+ * Clear stored auth and send the user to login (session expired / revoked token).
+ * Skips redirect if already on the login page.
+ */
+export function clearSessionAndRedirectToLogin(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem('user');
+    if (raw) {
+      const u = JSON.parse(raw) as { user_id?: string };
+      if (u?.user_id) {
+        localStorage.removeItem(portalChatSessionStorageKey(u.user_id));
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user');
+  if (window.location.pathname !== '/login') {
+    window.location.assign('/login?session=expired');
+  }
+}
+
+function shouldLogoutOn401(endpoint: string, hadBearer: boolean): boolean {
+  if (!hadBearer) return false;
+  if (AUTH_401_NO_LOGOUT.has(endpoint)) return false;
+  return true;
+}
 
 class ApiService {
   private getToken(): string | null {
@@ -39,8 +74,21 @@ class ApiService {
     });
 
     if (!response.ok) {
+      if (
+        response.status === 401 &&
+        shouldLogoutOn401(endpoint, Boolean(token))
+      ) {
+        clearSessionAndRedirectToLogin();
+      }
       const error = await response.json().catch(() => ({ detail: 'An error occurred' }));
-      throw new Error(error.detail || 'Request failed');
+      const detail = error.detail;
+      const msg =
+        typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((d: { msg?: string }) => d.msg).filter(Boolean).join(', ')
+            : 'Request failed';
+      throw new Error(msg || 'Request failed');
     }
 
     return response.json();
@@ -109,6 +157,27 @@ class ApiService {
     return this.request('/assignments/teacher/courses');
   }
 
+  /** Per-student submission rows for assignments this teacher created (optional assignment filter). */
+  async getTeacherSubmissions(assignmentId?: string): Promise<unknown> {
+    const q = assignmentId
+      ? `?assignment_id=${encodeURIComponent(assignmentId)}`
+      : '';
+    return this.request(`/assignments/teacher/submissions${q}`);
+  }
+
+  async gradeTeacherSubmission(payload: {
+    submission_id?: string;
+    assignment_id?: string;
+    student_roll?: string;
+    marks_obtained: number;
+    feedback?: string;
+  }): Promise<unknown> {
+    return this.request('/assignments/teacher/grade-submission', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
   async analyzeTeacherAssignmentPdf(file: File): Promise<AssignmentPdfAnalyzeResponse> {
     const token = this.getToken();
     const formData = new FormData();
@@ -118,6 +187,9 @@ class ApiService {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
+    if (response.status === 401 && token) {
+      clearSessionAndRedirectToLogin();
+    }
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Analyze failed' }));
       const d = err.detail;
@@ -133,6 +205,9 @@ class ApiService {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
+    if (response.status === 401 && token) {
+      clearSessionAndRedirectToLogin();
+    }
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Upload failed' }));
       const d = err.detail;
@@ -152,7 +227,9 @@ class ApiService {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
-    
+    if (response.status === 401 && token) {
+      clearSessionAndRedirectToLogin();
+    }
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Upload failed' }));
       const d = err.detail;
@@ -170,6 +247,9 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/assignments/${assignmentId}/attachment`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
+    if (response.status === 401 && token) {
+      clearSessionAndRedirectToLogin();
+    }
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Download failed' }));
       const d = err.detail;
@@ -197,7 +277,9 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/report/student/pdf`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-
+    if (response.status === 401 && token) {
+      clearSessionAndRedirectToLogin();
+    }
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Failed to download report' }));
       const d = err.detail;

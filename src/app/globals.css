@@ -210,6 +210,16 @@ body {
   padding-left: 0.75rem;
 }
 
+/* Superadmin: voice only, no document upload (same left inset as a single leading control) */
+.composer-bar--superadmin .composer-field {
+  padding-left: 3.25rem;
+}
+
+.composer-bar--superadmin:focus-within {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+}
+
 .composer-field::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
@@ -479,5 +489,22 @@ body {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* Narrow screens: less left inset so text isn’t hidden behind composer icons */
+  .composer-bar--student .composer-field {
+    padding-left: 5.25rem;
+  }
+
+  .composer-bar--teacher .composer-field {
+    padding-left: 3rem;
+  }
+
+  .composer-bar--superadmin .composer-field {
+    padding-left: 2.85rem;
+  }
+
+  .composer-field {
+    font-size: 1rem; /* reduce iOS zoom-on-focus */
   }
 }

@@ -258,7 +258,7 @@ export function StudentReportModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-dialog-title"
-        className="relative z-10 w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col glass rounded-2xl border border-white/15 shadow-2xl slide-up"
+        className="relative z-10 w-full max-w-4xl max-h-[min(92vh,100dvh)] overflow-hidden flex flex-col glass rounded-2xl border border-white/15 shadow-2xl slide-up"
       >
         <div className="flex items-start justify-between gap-3 px-5 sm:px-6 py-4 border-b border-white/10 shrink-0">
           <div className="min-w-0">

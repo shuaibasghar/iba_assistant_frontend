@@ -1,17 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get('session') === 'expired';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,15 +47,20 @@ export default function LoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold gradient-text mb-2">IBA Sukkur Portal</h1>
+          <h1 className="text-2xl font-bold gradient-text mb-2 sm:text-3xl">IBA Sukkur Portal</h1>
           <p className="text-gray-400">AI-Powered University Assistant</p>
         </div>
 
         {/* Login Card */}
-        <div className="glass rounded-2xl p-8 slide-up">
+        <div className="glass rounded-2xl p-5 slide-up sm:p-8">
           <h2 className="text-xl font-semibold text-white mb-6 text-center">Welcome Back</h2>
           
           <form onSubmit={handleSubmit} className="space-y-5">
+            {sessionExpired && (
+              <div className="bg-amber-500/10 border border-amber-500/35 text-amber-200 px-4 py-3 rounded-xl text-sm fade-in">
+                Your session has expired. Please sign in again.
+              </div>
+            )}
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm fade-in">
                 {error}
@@ -125,7 +132,7 @@ export default function LoginPage() {
           {/* Demo credentials */}
           <div className="mt-6 pt-6 border-t border-white/10">
             <p className="text-xs text-gray-500 text-center mb-3">Demo Credentials</p>
-            <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => {
@@ -156,5 +163,19 @@ export default function LoginPage() {
         <p className="text-center text-gray-500 text-sm mt-6 fade-in">IBA Sukkur University &copy; 2024</p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen gradient-bg flex items-center justify-center p-4 text-gray-400">
+          Loading…
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

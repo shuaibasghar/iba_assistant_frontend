@@ -157,22 +157,22 @@ export default function TeacherAssignmentUploadPage() {
   }
 
   return (
-    <div className="min-h-screen gradient-bg px-4 py-10">
+    <div className="min-h-screen gradient-bg px-3 py-6 sm:px-4 sm:py-10">
       <div className="max-w-xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white">New assignment</h1>
+        <div className="flex flex-col gap-4 mb-8 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-white sm:text-2xl">New assignment</h1>
             <p className="text-gray-400 text-sm mt-1">Upload a PDF brief for your class</p>
           </div>
           <Link
             href="/chat"
-            className="text-sm text-indigo-300 hover:text-white transition-colors"
+            className="shrink-0 text-sm text-indigo-300 hover:text-white transition-colors self-start sm:self-auto"
           >
             ← Chat
           </Link>
         </div>
 
-        <form onSubmit={submit} className="glass rounded-2xl p-6 space-y-6 border border-white/10">
+        <form onSubmit={submit} className="glass rounded-2xl p-4 space-y-6 border border-white/10 sm:p-6">
           {message && (
             <div
               className={`px-4 py-3 rounded-xl text-sm ${
@@ -232,7 +232,7 @@ export default function TeacherAssignmentUploadPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="text-sm text-gray-300 block mb-2">Opens</label>
               <input
@@ -277,7 +277,7 @@ export default function TeacherAssignmentUploadPage() {
               }}
               onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
-              className={`rounded-2xl border-2 border-dashed transition-all p-8 text-center cursor-pointer ${
+              className={`rounded-2xl border-2 border-dashed transition-all p-5 text-center cursor-pointer sm:p-8 ${
                 dragOver
                   ? 'border-indigo-400 bg-indigo-500/10'
                   : 'border-white/20 bg-white/5 hover:border-white/35'

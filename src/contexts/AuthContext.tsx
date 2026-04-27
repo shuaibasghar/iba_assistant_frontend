@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, LoginResponse } from '@/types';
 import { api } from '@/services/api';
+import { portalChatSessionStorageKey } from '@/lib/portalChatSession';
 
 interface AuthContextType {
   user: User | null;
@@ -71,12 +72,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    const chatKey = user?.user_id ? portalChatSessionStorageKey(user.user_id) : null;
     try {
       await api.logout();
     } finally {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
+      if (chatKey) {
+        localStorage.removeItem(chatKey);
+      }
       setUser(null);
     }
   };
