@@ -15,7 +15,7 @@ import { portalChatSessionStorageKey } from "@/lib/portalChatSession";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://137.184.70.56";
 
 /** Paths where 401 means invalid credentials, not "session expired". */
-const AUTH_401_NO_LOGOUT = new Set(["/auth/login", "/auth/login/form"]);
+const AUTH_401_NO_LOGOUT = new Set(["/api/auth/login", "/api/auth/login/form"]);
 
 /**
  * Clear stored auth and send the user to login (session expired / revoked token).
@@ -102,7 +102,7 @@ class ApiService {
     }
 
     async login(email: string, password: string): Promise<LoginResponse> {
-        return this.request<LoginResponse>("/auth/login", {
+        return this.request<LoginResponse>("/api/auth/login", {
             method: "POST",
             body: JSON.stringify({ email, password }),
         });
@@ -110,7 +110,7 @@ class ApiService {
 
     async logout(): Promise<void> {
         try {
-            await this.request("/auth/logout", { method: "POST" });
+            await this.request("/api/auth/logout", { method: "POST" });
         } finally {
             localStorage.removeItem("access_token");
             localStorage.removeItem("refresh_token");
@@ -119,11 +119,11 @@ class ApiService {
     }
 
     async getMe(): Promise<User> {
-        return this.request<User>("/auth/me");
+        return this.request<User>("/api/auth/me");
     }
 
     async refreshToken(refreshToken: string): Promise<LoginResponse> {
-        return this.request<LoginResponse>("/auth/refresh", {
+        return this.request<LoginResponse>("/api/auth/refresh", {
             method: "POST",
             body: JSON.stringify({ refresh_token: refreshToken }),
         });
@@ -135,7 +135,7 @@ class ApiService {
         student_id?: string;
         user_role?: string;
     }): Promise<ChatSession> {
-        return this.request<ChatSession>("/chat/session/start", {
+        return this.request<ChatSession>("/api/chat/session/start", {
             method: "POST",
             body: JSON.stringify(identifier),
         });
@@ -145,7 +145,7 @@ class ApiService {
         sessionId: string,
         message: string,
     ): Promise<ChatResponse> {
-        return this.request<ChatResponse>("/chat/message", {
+        return this.request<ChatResponse>("/api/chat/message", {
             method: "POST",
             body: JSON.stringify({ session_id: sessionId, message }),
         });
@@ -155,25 +155,25 @@ class ApiService {
         messages: Array<{ role: string; content: string }>;
         count: number;
     }> {
-        return this.request(`/chat/session/${sessionId}/history`);
+        return this.request(`/api/chat/session/${sessionId}/history`);
     }
 
     async endChatSession(
         sessionId: string,
     ): Promise<{ success: boolean; message: string }> {
-        return this.request(`/chat/session/${sessionId}/end`, {
+        return this.request(`/api/chat/session/${sessionId}/end`, {
             method: "POST",
         });
     }
 
     async getStudentReport(): Promise<StudentReportPayload> {
-        return this.request<StudentReportPayload>("/report/student");
+        return this.request<StudentReportPayload>("/api/report/student");
     }
 
     async getTeacherAssignmentCourses(): Promise<{
         courses: TeacherCourseOption[];
     }> {
-        return this.request("/assignments/teacher/courses");
+        return this.request("/api/assignments/teacher/courses");
     }
 
     /** Per-student submission rows for assignments this teacher created (optional assignment filter). */
@@ -181,7 +181,7 @@ class ApiService {
         const q = assignmentId
             ? `?assignment_id=${encodeURIComponent(assignmentId)}`
             : "";
-        return this.request(`/assignments/teacher/submissions${q}`);
+        return this.request(`/api/assignments/teacher/submissions${q}`);
     }
 
     async gradeTeacherSubmission(payload: {
@@ -191,7 +191,7 @@ class ApiService {
         marks_obtained: number;
         feedback?: string;
     }): Promise<unknown> {
-        return this.request("/assignments/teacher/grade-submission", {
+        return this.request("/api/assignments/teacher/grade-submission", {
             method: "POST",
             body: JSON.stringify(payload),
         });
@@ -204,7 +204,7 @@ class ApiService {
         const formData = new FormData();
         formData.append("file", file);
         const response = await fetch(
-            `${API_BASE_URL}/assignments/teacher/pdf/analyze`,
+            `${API_BASE_URL}/api/assignments/teacher/pdf/analyze`,
             {
                 method: "POST",
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -229,7 +229,7 @@ class ApiService {
     ): Promise<CreateAssignmentPdfResponse> {
         const token = this.getToken();
         const response = await fetch(
-            `${API_BASE_URL}/assignments/teacher/pdf`,
+            `${API_BASE_URL}/api/assignments/teacher/pdf`,
             {
                 method: "POST",
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -258,7 +258,7 @@ class ApiService {
         formData.append("session_id", sessionId);
         formData.append("file", file);
 
-        const response = await fetch(`${API_BASE_URL}/chat/upload_file`, {
+        const response = await fetch(`${API_BASE_URL}/api/chat/upload_file`, {
             method: "POST",
             headers: token ? { Authorization: `Bearer ${token}` } : {},
             body: formData,
@@ -279,13 +279,13 @@ class ApiService {
     async getMyAssignmentsList(): Promise<{
         assignments: StudentAssignmentListItem[];
     }> {
-        return this.request("/assignments/student/mine");
+        return this.request("/api/assignments/student/mine");
     }
 
     async downloadAssignmentPdf(assignmentId: string): Promise<void> {
         const token = this.getToken();
         const response = await fetch(
-            `${API_BASE_URL}/assignments/${assignmentId}/attachment`,
+            `${API_BASE_URL}/api/assignments/${assignmentId}/attachment`,
             {
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             },
@@ -321,7 +321,7 @@ class ApiService {
 
     async downloadStudentReportPdf(): Promise<void> {
         const token = this.getToken();
-        const response = await fetch(`${API_BASE_URL}/report/student/pdf`, {
+        const response = await fetch(`${API_BASE_URL}/api/report/student/pdf`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (response.status === 401 && token) {
